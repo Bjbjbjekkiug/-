@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>כספת דמויות</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d1b18;--mut:#7a746a;--acc:#5b45e0;--line:#e4dfd5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#17161a;--card:#222127;--ink:#f1eee8;--mut:#9b958b;--acc:#8d7bff;--line:#34323a}}
+:root[data-theme=dark]{--bg:#17161a;--card:#222127;--ink:#f1eee8;--mut:#9b958b;--acc:#8d7bff;--line:#34323a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,sans-serif}
+header{padding:18px 16px 6px;max-width:900px;margin:auto}h1{margin:0;font-size:22px}
+.sub{color:var(--mut);font-size:13px}
+nav{display:flex;gap:8px;max-width:900px;margin:10px auto;padding:0 16px}
+nav button{flex:1;padding:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font:inherit;font-weight:600}
+nav button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+main{max-width:900px;margin:auto;padding:8px 16px 60px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer}
+.card img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--line)}
+.card div{padding:8px 10px}.card b{display:block}.card small{color:var(--mut);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:600}
+.btn.g{background:transparent;color:var(--ink);border:1px solid var(--line)}.btn.d{background:#c0392b}
+.bar{display:flex;gap:8px;margin:8px 0 14px;flex-wrap:wrap}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+input,textarea,.body,.card b,.card small,.item b,.item small,h2{unicode-bidi:plaintext;text-align:start}
+input,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;margin:6px 0}
+textarea{min-height:200px;resize:vertical}
+.pic{width:140px;height:140px;border-radius:14px;object-fit:cover;background:var(--line);display:block}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start}.row>.f{flex:1;min-width:200px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,var(--acc) 15%,transparent);color:var(--acc);border-radius:99px;padding:1px 9px 1px 2px;font-weight:600;cursor:pointer;vertical-align:middle}
+.chip img{width:22px;height:22px;border-radius:50%;object-fit:cover}
+.body{white-space:pre-wrap;word-wrap:break-word;line-height:1.9}
+.pop{position:relative}.pop ul{position:absolute;z-index:5;left:0;right:0;top:-4px;transform:translateY(-100%);margin:0;padding:4px;list-style:none;background:var(--card);border:1px solid var(--line);border-radius:12px;max-height:220px;overflow:auto;box-shadow:0 6px 24px #0003}
+.pop li{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer}.pop li:hover{background:var(--line)}
+.pop li img{width:28px;height:28px;border-radius:50%;object-fit:cover}
+.item{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);background:var(--card);border-radius:12px;margin-bottom:8px;cursor:pointer}
+.item small{color:var(--mut)}.empty{color:var(--mut);text-align:center;padding:40px 0}
+#msg{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:99px;display:none;font-size:14px}
+</style></head><body>
+<header><h1>🎭 כספת דמויות</h1><div class="sub" id="who">לא מחובר</div></header>
+<nav><button id="t-c" class="on">דמויות</button><button id="t-f">קבצים</button></nav>
+<main id="app"></main>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script><div id="msg"></div>
+<script>
+// הדבק כאן את firebaseConfig שלך (אחרי ההדבקה אפשר לשלוח את הקובץ לחברים)
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAi-NCmnE02BKiuy62fbworjKpw56ghxzA",
+  authDomain: "series-7603e.firebaseapp.com",
+  projectId: "series-7603e",
+  storageBucket: "series-7603e.firebasestorage.app",
+  messagingSenderId: "701272346663",
+  appId: "1:701272346663:web:e06853c2a6bafbb9d8be02"
+};
+const $=s=>document.querySelector(s);
+let db=null,chars=[],files=[],tab='c',view=null,canWrite=true;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const handle=n=>n.trim().replace(/\s+/g,'_');
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function toast(t){const m=$('#msg');m.textContent=t;m.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>m.style.display='none',2500)}
+// cropImage(file) -> Promise<dataURL | null>
+// Drag to move, slider to zoom. Returns a square JPEG, or null if cancelled.
+function cropImage(file, outSize = 420) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const V = Math.min(window.innerWidth - 32, 360);
+      const ov = document.createElement('div');
+      ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;direction:rtl;font-family:inherit';
+      const c = document.createElement('canvas');
+      c.width = c.height = V;
+      c.style.cssText = 'background:#222;border-radius:12px;touch-action:none';
+      const z = document.createElement('input');
+      z.type = 'range'; z.min = 1; z.max = 4; z.step = 0.01; z.value = 1;
+      z.style.width = V + 'px';
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:10px;width:' + V + 'px';
+      const mk = (txt, bg, col) => {
+        const b = document.createElement('button');
+        b.textContent = txt;
+        b.style.cssText = `flex:1;padding:12px;border:0;border-radius:12px;font-size:16px;background:${bg};color:${col}`;
+        return b;
+      };
+      const ok = mk('אישור', '#5b45e0', '#fff');
+      const no = mk('ביטול', '#fff', '#000');
+      row.append(ok, no);
+      ov.append(c, z, row);
+      document.body.appendChild(ov);
+
+      const ctx = c.getContext('2d');
+      const base = Math.max(V / img.width, V / img.height);
+      let scale = 1, ox = (V - img.width * base) / 2, oy = (V - img.height * base) / 2;
+
+      const clamp = () => {
+        const w = img.width * base * scale, h = img.height * base * scale;
+        ox = Math.min(0, Math.max(V - w, ox));
+        oy = Math.min(0, Math.max(V - h, oy));
+      };
+      const draw = () => {
+        clamp();
+        ctx.clearRect(0, 0, V, V);
+        ctx.drawImage(img, ox, oy, img.width * base * scale, img.height * base * scale);
+      };
+      draw();
+
+      z.oninput = () => {
+        const cx = (V / 2 - ox) / (base * scale), cy = (V / 2 - oy) / (base * scale);
+        scale = parseFloat(z.value);
+        ox = V / 2 - cx * base * scale;
+        oy = V / 2 - cy * base * scale;
+        draw();
+      };
+
+      let last = null;
+      c.onpointerdown = (e) => { last = [e.clientX, e.clientY]; c.setPointerCapture(e.pointerId); };
+      c.onpointermove = (e) => {
+        if (!last) return;
+        ox += e.clientX - last[0]; oy += e.clientY - last[1];
+        last = [e.clientX, e.clientY];
+        draw();
+      };
+      c.onpointerup = c.onpointercancel = () => { last = null; };
+
+      const done = (v) => { ov.remove(); URL.revokeObjectURL(img.src); resolve(v); };
+      no.onclick = () => done(null);
+      ok.onclick = () => {
+        const out = document.createElement('canvas');
+        out.width = out.height = outSize;
+        const k = outSize / V;
+        out.getContext('2d').drawImage(img, ox * k, oy * k, img.width * base * scale * k, img.height * base * scale * k);
+        done(out.toDataURL('image/jpeg', 0.85));
+      };
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function shrink(file){return new Promise((ok,no)=>{const i=new Image,u=URL.createObjectURL(file);i.onload=()=>{const s=Math.min(1,420/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.82))};i.onerror=no;i.src=u})}
+function mentionsOf(text){const low=text.toLowerCase();return chars.filter(c=>low.includes('@'+handle(c.name).toLowerCase())).map(c=>c.id)}
+function render(){
+ $('#t-c').className=tab=='c'?'on':'';$('#t-f').className=tab=='f'?'on':'';
+ const a=$('#app');
+ if(!db){setup(a);return}
+ if(tab=='c')view&&view.k=='c'?charForm(a):charList(a);else view&&view.k=='f'?fileView(a):fileList(a);
+}
+let errMsg='';
+function setup(a){
+ a.innerHTML='<div class="empty" dir="auto">'+esc(errMsg||'השרת עדיין לא מחובר.')+'</div>';
+}
+function charList(a){
+ a.innerHTML=`<div class="bar"><button class="btn" id="new">+ דמות חדשה</button></div>`+(chars.length?`<div class="grid">${chars.map(c=>`<div class="card" data-id="${c.id}"><img src="${c.photo}" alt=""><div><b>${esc(c.name)}</b><small>${esc(c.desc||'')}</small></div></div>`).join('')}</div>`:'<div class="empty">אין עדיין דמויות. בחר תמונה כדי ליצור את הראשונה.</div>');
+ $('#new').onclick=()=>{view={k:'c',d:{id:uid(),name:'',desc:'',photo:''},isNew:true};render()};
+ a.querySelectorAll('.card').forEach(e=>e.onclick=()=>{view={k:'c',d:{...chars.find(c=>c.id==e.dataset.id)}};render()});
+}
+function charForm(a){
+ const d=view.d;
+ a.innerHTML=`<div class="panel"><div class="row"><div><img class="pic" id="pp" src="${d.photo||'data:image/svg+xml,'+encodeURIComponent('<svg xmlns=%22http://www.w3.org/2000/svg%22/>')}"><input type="file" id="ph" accept="image/*" style="display:none"><button class="btn g" id="pick" style="margin-top:8px;width:140px">בחר תמונה</button></div>
+ <div class="f"><input id="nm" dir="auto" placeholder="שם הדמות" value="${esc(d.name)}"><textarea id="ds" dir="auto" placeholder="תאר אותם…" style="min-height:120px">${esc(d.desc||'')}</textarea></div></div>
+ <div class="bar" style="margin:10px 0 0"><button class="btn" id="save">שמור</button><button class="btn g" id="back">ביטול</button>${view.isNew?'':'<button class="btn d" id="del">מחק</button>'}</div></div>`;
+ $('#pick').onclick=()=>$('#ph').click();
+ $('#ph').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const r=await cropImage(f);e.target.value='';if(!r)return;d.photo=r;$('#pp').src=d.photo}catch{toast('לא הצלחתי לקרוא את התמונה')}};
+ $('#back').onclick=()=>{view=null;render()};
+ $('#save').onclick=async()=>{d.name=$('#nm').value.trim();d.desc=$('#ds').value;if(!d.name||!d.photo)return toast('הוסף תמונה ושם');
+  if(chars.some(c=>c.id!=d.id&&handle(c.name).toLowerCase()==handle(d.name).toLowerCase()))return toast('השם כבר תפוס');
+  try{await db.collection('characters').doc(d.id).set({name:d.name,desc:d.desc,photo:d.photo,t:Date.now()});view=null;render()}catch(e){toast('השמירה נכשלה: '+(e.message||e.code))}};
+ const del=$('#del');if(del)del.onclick=async()=>{if(confirm('למחוק את הדמות?')){await db.collection('characters').doc(d.id).delete();view=null;render()}};
+}
+function fileList(a){
+ a.innerHTML=`<div class="bar"><button class="btn" id="new">+ קובץ חדש</button></div>`+(files.length?files.map(f=>`<div class="item" data-id="${f.id}"><div style="flex:1"><b>📄 ${esc(f.name)}</b><br><small>${esc((f.text||'').slice(0,90))}</small></div><div>${(f.mentions||[]).map(id=>chars.find(c=>c.id==id)).filter(Boolean).slice(0,4).map(c=>`<img src="${c.photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;margin-inline-start:-6px;border:2px solid var(--card)">`).join('')}</div></div>`).join(''):'<div class="empty">אין עדיין קבצים.</div>');
+ $('#new').onclick=()=>{view={k:'f',d:{id:uid(),name:'',text:''},edit:true,isNew:true};render()};
+ a.querySelectorAll('.item').forEach(e=>e.onclick=()=>{view={k:'f',d:{...files.find(f=>f.id==e.dataset.id)}};render()});
+}
+function fileView(a){
+ const d=view.d;
+ if(!view.edit){
+  const ids=new Set(mentionsOf(d.text||''));
+  let html=esc(d.text||'');
+  [...chars].sort((x,y)=>handle(y.name).length-handle(x.name).length).forEach(c=>{
+   const re=new RegExp('@'+handle(c.name).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+   html=html.replace(re,`<span class="chip" data-c="${c.id}"><img src="${c.photo}" alt="">${esc(c.name)}</span>`)});
+  a.innerHTML=`<div class="bar"><button class="btn g" id="back">→ קבצים</button><button class="btn" id="ed">עריכה</button></div><div class="panel"><h2 style="margin-top:0">${esc(d.name)}</h2><div class="body">${html}</div></div>`;
+  $('#back').onclick=()=>{view=null;render()};$('#ed').onclick=()=>{view.edit=true;render()};
+  a.querySelectorAll('.chip').forEach(e=>e.onclick=()=>{tab='c';view={k:'c',d:{...chars.find(c=>c.id==e.dataset.c)}};render()});
+  return}
+ a.innerHTML=`<div class="panel"><input id="fn" dir="auto" placeholder="שם הקובץ" value="${esc(d.name)}"><div class="pop"><ul id="ls" hidden></ul><textarea id="tx" dir="auto" placeholder="כתוב כאן. הקלד @ כדי לתייג דמות…">${esc(d.text||'')}</textarea></div>
+ <div class="bar" style="margin:6px 0 0"><button class="btn" id="save">שמור</button><button class="btn g" id="back">ביטול</button>${view.isNew?'':'<button class="btn d" id="del">מחק</button>'}</div></div>`;
+ const tx=$('#tx'),ls=$('#ls');
+ function suggest(){const p=tx.selectionStart,m=/@([^\s@]*)$/.exec(tx.value.slice(0,p));
+  if(!m){ls.hidden=true;return}
+  const q=m[1].toLowerCase(),r=chars.filter(c=>handle(c.name).toLowerCase().startsWith(q)||c.name.toLowerCase().includes(q)).slice(0,8);
+  if(!r.length){ls.hidden=true;return}
+  ls.innerHTML=r.map(c=>`<li data-id="${c.id}"><img src="${c.photo}" alt="">${esc(c.name)}</li>`).join('');ls.hidden=false;
+  ls.querySelectorAll('li').forEach(li=>li.onmousedown=e=>{e.preventDefault();const c=chars.find(x=>x.id==li.dataset.id),v=tx.value;
+   tx.value=v.slice(0,p-m[0].length)+'@'+handle(c.name)+' '+v.slice(p);const n=p-m[0].length+handle(c.name).length+2;tx.setSelectionRange(n,n);ls.hidden=true;tx.focus()})}
+ tx.oninput=suggest;tx.onclick=suggest;tx.onblur=()=>setTimeout(()=>ls.hidden=true,150);
+ $('#back').onclick=()=>{view=view.isNew?null:{k:'f',d:files.find(f=>f.id==d.id)};render()};
+ $('#save').onclick=async()=>{d.name=$('#fn').value.trim();d.text=tx.value;if(!d.name)return toast('תן שם לקובץ');
+  try{await db.collection('files').doc(d.id).set({name:d.name,text:d.text,mentions:mentionsOf(d.text),t:Date.now()});view={k:'f',d:{...d}};render()}catch(e){toast('השמירה נכשלה: '+(e.message||e.code))}};
+ const del=$('#del');if(del)del.onclick=async()=>{if(confirm('למחוק את הקובץ?')){await db.collection('files').doc(d.id).delete();view=null;render()}};
+}
+$('#t-c').onclick=()=>{tab='c';view=null;render()};$('#t-f').onclick=()=>{tab='f';view=null;render()};
+const list=s=>s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.t||0)-(a.t||0));
+function start(cfg){
+ try{firebase.initializeApp(cfg);db=firebase.firestore()}catch(e){db=null;errMsg=typeof firebase=='undefined'?'ספריית Firebase לא נטענה. פתח את הקובץ ב-Chrome ולא בתוך אפליקציית Claude.':'שגיאת התחברות: '+(e.message||e);render();return}
+ $('#who').textContent='כספת משותפת · כל מי שפותח את הקובץ רואה עדכונים בזמן אמת';
+ const editing=()=>view&&(view.edit||view.k=='c'&&tab=='c')&&document.activeElement&&/INPUT|TEXTAREA/.test(document.activeElement.tagName);
+ db.collection('characters').onSnapshot(s=>{chars=list(s);if(!editing())render()},e=>toast('שגיאת סנכרון – בדוק את ה-Rules'));
+ db.collection('files').onSnapshot(s=>{files=list(s);if(!editing())render()},e=>toast('שגיאת סנכרון – בדוק את ה-Rules'));
+ render();
+}
+let cfg=FIREBASE_CONFIG;
+if(!cfg.projectId){try{cfg=JSON.parse(localStorage.getItem('fbcfg')||'{}')}catch{cfg={}}}
+if(cfg&&cfg.projectId)start(cfg);else render();
+</script></body></html>
